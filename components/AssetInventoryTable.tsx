@@ -26,12 +26,13 @@ interface AssetRowProps {
     asset: CryptographicAsset & { priority: PriorityLevel };
     isExpanded: boolean;
     onToggle: () => void;
+    onInitiateMigration: (assetId: string) => void;
 }
 
-const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
+const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle, onInitiateMigration }) => {
     return (
         <>
-            <tr onClick={onToggle} className="cursor-pointer border-b border-brand-border hover:bg-brand-surface/50 transition-colors duration-200">
+            <tr onClick={onToggle} className="cursor-pointer border-b border-brand-border hover:bg-brand-surface/50 transition-all duration-200 hover:scale-[1.01]">
                 <td className="p-4">{asset.name}</td>
                 <td className="p-4">{asset.type}</td>
                 <td className="p-4">{asset.algorithm}</td>
@@ -46,13 +47,26 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
                     <StatusBadge status={asset.status} />
                 </td>
                 <td className="p-4 text-sm">{asset.migrationPlanStatus}</td>
+                <td className="p-4">
+                    {asset.status === AssetStatus.VULNERABLE && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onInitiateMigration(asset.id);
+                            }}
+                            className="bg-brand-primary text-white text-xs font-semibold px-3 py-1 rounded-md hover:bg-brand-primary/80 transition-colors duration-200 whitespace-nowrap"
+                        >
+                            Initiate Migration
+                        </button>
+                    )}
+                </td>
                 <td className="p-4 text-center">
                     <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                 </td>
             </tr>
             {isExpanded && (
                 <tr className="bg-brand-surface/30">
-                    <td colSpan={8} className="p-0">
+                    <td colSpan={9} className="p-0">
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <h4 className="font-semibold text-brand-text-secondary mb-1">Associated Systems (All)</h4>
@@ -74,6 +88,7 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
 
 interface AssetInventoryTableProps {
   assets: CryptographicAsset[];
+  onInitiateMigration: (assetId: string) => void;
 }
 
 const getPriority = (asset: CryptographicAsset): PriorityLevel => {
@@ -92,7 +107,7 @@ const getPriority = (asset: CryptographicAsset): PriorityLevel => {
 
 type SortKey = keyof CryptographicAsset | 'priority';
 
-export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets }) => {
+export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets, onInitiateMigration }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<AssetStatus | 'All'>('All');
   const [typeFilter, setTypeFilter] = useState('All');
@@ -245,6 +260,7 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
                   <div className="flex items-center gap-2">{label} {renderSortIcon(key)}</div>
                 </th>
               ))}
+              <th scope="col" className="p-4">Actions</th>
               <th scope="col" className="p-4 text-center">Details</th>
             </tr>
           </thead>
@@ -256,11 +272,12 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
                         asset={asset}
                         isExpanded={expandedRow === asset.id}
                         onToggle={() => handleRowToggle(asset.id)}
+                        onInitiateMigration={onInitiateMigration}
                     />
                 ))
             ) : (
                 <tr>
-                    <td colSpan={8} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
+                    <td colSpan={9} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
                 </tr>
             )}
           </tbody>

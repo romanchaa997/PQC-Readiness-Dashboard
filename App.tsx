@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { MOCK_ASSETS } from './constants';
 import { AssetStatus, CryptographicAsset } from './types';
 import { CriticalAlerts } from './components/CriticalAlerts';
@@ -15,7 +15,7 @@ const Header: React.FC = () => (
 );
 
 const App: React.FC = () => {
-    const assets: CryptographicAsset[] = MOCK_ASSETS;
+    const [assets, setAssets] = useState<CryptographicAsset[]>(MOCK_ASSETS);
 
     const readinessScore = useMemo(() => {
         if (assets.length === 0) return 0;
@@ -33,6 +33,21 @@ const App: React.FC = () => {
         return Math.round((totalScore / maxScore) * 100);
     }, [assets]);
 
+    const handleInitiateMigration = (assetId: string) => {
+        setAssets(currentAssets => 
+            currentAssets.map(asset => {
+                if (asset.id === assetId) {
+                    return {
+                        ...asset,
+                        status: AssetStatus.IN_PROGRESS,
+                        migrationPlanStatus: 'Migration in Progress',
+                    };
+                }
+                return asset;
+            })
+        );
+    };
+
 
     return (
         <div className="min-h-screen bg-brand-bg font-sans p-4 sm:p-6 md:p-8">
@@ -47,7 +62,7 @@ const App: React.FC = () => {
                            <ReadinessScore score={readinessScore} />
                         </div>
                         <div className="lg:col-span-3">
-                           <AssetInventoryTable assets={assets} />
+                           <AssetInventoryTable assets={assets} onInitiateMigration={handleInitiateMigration} />
                         </div>
                     </div>
                 </main>

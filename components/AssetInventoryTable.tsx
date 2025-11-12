@@ -23,14 +23,15 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
                 <td className="p-4">
                     <StatusBadge status={asset.status} />
                 </td>
+                <td className="p-4 text-sm">{asset.migrationPlanStatus}</td>
                 <td className="p-4 text-center">
                     <ChevronDownIcon className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                 </td>
             </tr>
             {isExpanded && (
                 <tr className="bg-brand-surface/30">
-                    <td colSpan={6} className="p-0">
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <td colSpan={7} className="p-0">
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <h4 className="font-semibold text-brand-text-secondary mb-1">Associated Systems (All)</h4>
                                 <ul className="list-disc list-inside">
@@ -40,10 +41,6 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
                             <div>
                                 <h4 className="font-semibold text-brand-text-secondary mb-1">Last Audit Date</h4>
                                 <p>{asset.lastAuditDate}</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-brand-text-secondary mb-1">Migration Plan Status</h4>
-                                <p>{asset.migrationPlanStatus}</p>
                             </div>
                         </div>
                     </td>
@@ -89,6 +86,16 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
         [AssetStatus.NOT_STARTED]: 2,
         [AssetStatus.PQC_READY]: 3,
       };
+      
+      const migrationPlanSortOrder: Record<string, number> = {
+        'Not Started': 0,
+        'Awaiting Vendor Patch': 1,
+        'Researching Alternatives': 2,
+        'Planning Phase': 3,
+        'Testing Phase': 4,
+        'Migration in Progress': 5,
+        'Completed': 6,
+      };
 
       sortableAssets.sort((a, b) => {
         let result = 0;
@@ -99,6 +106,10 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
           const valA = a.associatedSystems[0] || '';
           const valB = b.associatedSystems[0] || '';
           result = valA.localeCompare(valB);
+        } else if (sortConfig.key === 'migrationPlanStatus') {
+            const valA = migrationPlanSortOrder[a.migrationPlanStatus] ?? 99;
+            const valB = migrationPlanSortOrder[b.migrationPlanStatus] ?? 99;
+            result = valA - valB;
         } else {
           // Default sorting for other keys
           if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -175,7 +186,8 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
                   ['type', 'Type'], 
                   ['algorithm', 'Algorithm'], 
                   ['associatedSystems', 'Primary System'],
-                  ['status', 'Status']
+                  ['status', 'Status'],
+                  ['migrationPlanStatus', 'Plan Status'],
               ] as const).map(([key, label]) => (
                 <th key={key} scope="col" className="p-4 cursor-pointer hover:bg-brand-surface" onClick={() => requestSort(key)}>
                   <div className="flex items-center gap-2">{label} {renderSortIcon(key)}</div>
@@ -196,7 +208,7 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
                 ))
             ) : (
                 <tr>
-                    <td colSpan={6} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
+                    <td colSpan={7} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
                 </tr>
             )}
           </tbody>

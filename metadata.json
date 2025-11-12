@@ -1,0 +1,5 @@
+{
+  "name": "PQC Readiness Dashboard",
+  "description": "An interface to view and manage an organization's readiness for Post-Quantum Cryptography (PQC) migration. It includes critical alerts, an overall readiness score, and a detailed, filterable inventory of cryptographic assets.",
+  "requestFramePermissions": []
+}

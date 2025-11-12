@@ -6,6 +6,12 @@ export enum AssetStatus {
   NOT_STARTED = 'Not-Started',
 }
 
+export enum PriorityLevel {
+  HIGH = 'High',
+  MEDIUM = 'Medium',
+  LOW = 'Low',
+}
+
 export interface CryptographicAsset {
   id: string;
   name: string;

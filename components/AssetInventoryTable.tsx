@@ -1,10 +1,29 @@
 import React, { useState, useMemo } from 'react';
-import { CryptographicAsset, AssetStatus } from '../types';
+import { CryptographicAsset, AssetStatus, PriorityLevel } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ChevronDownIcon, ArrowUpDownIcon, SearchIcon } from './icons';
 
+interface PriorityBadgeProps {
+    priority: PriorityLevel;
+}
+
+const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority }) => {
+    const priorityConfig = {
+        [PriorityLevel.HIGH]: 'text-brand-danger',
+        [PriorityLevel.MEDIUM]: 'text-brand-warning',
+        [PriorityLevel.LOW]: 'text-brand-success',
+    };
+    return (
+        <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${priorityConfig[priority].replace('text-', 'bg-')}`}></span>
+            <span className={priorityConfig[priority]}>{priority}</span>
+        </div>
+    );
+};
+
+
 interface AssetRowProps {
-    asset: CryptographicAsset;
+    asset: CryptographicAsset & { priority: PriorityLevel };
     isExpanded: boolean;
     onToggle: () => void;
 }
@@ -16,6 +35,9 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
                 <td className="p-4">{asset.name}</td>
                 <td className="p-4">{asset.type}</td>
                 <td className="p-4">{asset.algorithm}</td>
+                <td className="p-4">
+                    <PriorityBadge priority={asset.priority} />
+                </td>
                 <td className="p-4 text-sm text-brand-text-secondary">
                     {asset.associatedSystems[0] || 'N/A'}
                     {asset.associatedSystems.length > 1 && <span className="ml-2 text-xs opacity-70">+{asset.associatedSystems.length - 1} more</span>}
@@ -30,7 +52,7 @@ const AssetRow: React.FC<AssetRowProps> = ({ asset, isExpanded, onToggle }) => {
             </tr>
             {isExpanded && (
                 <tr className="bg-brand-surface/30">
-                    <td colSpan={7} className="p-0">
+                    <td colSpan={8} className="p-0">
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <h4 className="font-semibold text-brand-text-secondary mb-1">Associated Systems (All)</h4>
@@ -54,7 +76,21 @@ interface AssetInventoryTableProps {
   assets: CryptographicAsset[];
 }
 
-type SortKey = keyof CryptographicAsset;
+const getPriority = (asset: CryptographicAsset): PriorityLevel => {
+    switch (asset.status) {
+        case AssetStatus.VULNERABLE:
+            return PriorityLevel.HIGH;
+        case AssetStatus.IN_PROGRESS:
+        case AssetStatus.NOT_STARTED:
+            return PriorityLevel.MEDIUM;
+        case AssetStatus.PQC_READY:
+            return PriorityLevel.LOW;
+        default:
+            return PriorityLevel.LOW;
+    }
+};
+
+type SortKey = keyof CryptographicAsset | 'priority';
 
 export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,8 +102,15 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
   const uniqueTypes = useMemo(() => ['All', ...Array.from(new Set(assets.map(a => a.type)))], [assets]);
   const statusOptions: (AssetStatus | 'All')[] = ['All', ...Object.values(AssetStatus)];
 
+  const assetsWithPriority = useMemo(() => {
+    return assets.map(asset => ({
+      ...asset,
+      priority: getPriority(asset),
+    }));
+  }, [assets]);
+
   const filteredAndSortedAssets = useMemo(() => {
-    let sortableAssets = [...assets];
+    let sortableAssets = [...assetsWithPriority];
 
     // Filtering
     sortableAssets = sortableAssets.filter(asset => {
@@ -97,11 +140,19 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
         'Completed': 6,
       };
 
+      const prioritySortOrder: Record<PriorityLevel, number> = {
+        [PriorityLevel.HIGH]: 0,
+        [PriorityLevel.MEDIUM]: 1,
+        [PriorityLevel.LOW]: 2,
+      };
+
       sortableAssets.sort((a, b) => {
         let result = 0;
         
         if (sortConfig.key === 'status') {
           result = statusSortOrder[a.status] - statusSortOrder[b.status];
+        } else if (sortConfig.key === 'priority') {
+            result = prioritySortOrder[a.priority] - prioritySortOrder[b.priority];
         } else if (sortConfig.key === 'associatedSystems') {
           const valA = a.associatedSystems[0] || '';
           const valB = b.associatedSystems[0] || '';
@@ -125,7 +176,7 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
     }
 
     return sortableAssets;
-  }, [assets, searchTerm, statusFilter, typeFilter, sortConfig]);
+  }, [assetsWithPriority, searchTerm, statusFilter, typeFilter, sortConfig]);
   
   const requestSort = (key: SortKey) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -184,7 +235,8 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
               {([
                   ['name', 'Asset Name'], 
                   ['type', 'Type'], 
-                  ['algorithm', 'Algorithm'], 
+                  ['algorithm', 'Algorithm'],
+                  ['priority', 'Priority'], 
                   ['associatedSystems', 'Primary System'],
                   ['status', 'Status'],
                   ['migrationPlanStatus', 'Plan Status'],
@@ -208,7 +260,7 @@ export const AssetInventoryTable: React.FC<AssetInventoryTableProps> = ({ assets
                 ))
             ) : (
                 <tr>
-                    <td colSpan={7} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
+                    <td colSpan={8} className="text-center p-8 text-brand-text-secondary">No assets found matching your criteria.</td>
                 </tr>
             )}
           </tbody>

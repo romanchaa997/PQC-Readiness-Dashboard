@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { MOCK_ASSETS } from './constants';
 import { AssetStatus, CryptographicAsset } from './types';

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { CryptographicAsset, AssetStatus } from '../types';
 import { AlertTriangleIcon } from './icons';
